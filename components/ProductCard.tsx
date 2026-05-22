@@ -70,52 +70,52 @@ export default function ProductCard({ product }: ProductCardProps) {
       : undefined
 
   return (
-    <div className={`group rounded-[35px] overflow-hidden bg-white/5 border border-white/10 backdrop-blur-xl transition-all duration-500 hover:-translate-y-4 flex flex-col h-full ${product.premium || product.is_premium ? 'hover:shadow-[0_0_60px_rgba(255,0,0,0.3)]' : 'hover:shadow-[0_0_40px_rgba(255,255,255,0.1)]'}`}>
+    <div className={`group rounded-[20px] sm:rounded-[25px] md:rounded-[30px] lg:rounded-[35px] overflow-hidden bg-white/5 border border-white/10 backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 sm:hover:-translate-y-3 md:hover:-translate-y-4 flex flex-col h-full ${product.premium || product.is_premium ? 'hover:shadow-[0_0_60px_rgba(255,0,0,0.3)]' : 'hover:shadow-[0_0_40px_rgba(255,255,255,0.1)]'}`}>
       <div className="relative overflow-hidden aspect-[4/5] bg-black/20">
-        <img 
-          src={image} 
-          alt={name} 
-          className="w-full h-full object-cover group-hover:scale-110 transition duration-700 opacity-90 group-hover:opacity-100" 
+        <img
+          src={image}
+          alt={name}
+          className="w-full h-full object-cover group-hover:scale-110 transition duration-700 opacity-90 group-hover:opacity-100"
         />
 
         {/* Badges */}
-        <div className="absolute top-5 left-5 flex flex-col gap-2 z-10">
+        <div className="absolute top-3 sm:top-4 md:top-5 left-3 sm:left-4 md:left-5 flex flex-col gap-1 sm:gap-2 z-10">
           {isPremium && (
-            <span className="px-4 py-2 rounded-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black text-[10px] tracking-widest shadow-lg border border-red-400/30 uppercase">PREMIUM</span>
+            <span className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-full bg-gradient-to-r from-red-600 to-red-800 text-white font-black text-[8px] sm:text-[9px] md:text-[10px] tracking-widest shadow-lg border border-red-400/30 uppercase">PREMIUM</span>
           )}
           {product.isOnSale && (
-            <span className="px-4 py-2 rounded-full bg-red-500 font-bold text-xs shadow-lg">SALE</span>
+            <span className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-full bg-red-500 font-bold text-[10px] sm:text-xs md:text-xs shadow-lg">SALE</span>
           )}
           {product.isNew && (
-            <span className="px-4 py-2 rounded-full bg-yellow-500 text-black font-bold text-xs shadow-lg">NEW</span>
+            <span className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-full bg-yellow-500 text-black font-bold text-[10px] sm:text-xs md:text-xs shadow-lg">NEW</span>
           )}
         </div>
 
         {/* Wishlist Button */}
-        <button className="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/70 hover:text-red-500 hover:border-red-500 transition-all z-10">
+        <button className="absolute top-3 sm:top-4 md:top-5 right-3 sm:right-4 md:right-5 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/70 hover:text-red-500 hover:border-red-500 transition-all z-10">
           ♡
         </button>
-        
+
         {/* Quick Actions (Hover) */}
-        <div className="absolute inset-x-0 bottom-0 p-4 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 z-10 flex gap-2">
-           <Link href={`/product/${id}`} className="flex-1 py-3 text-center rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 transition-all font-semibold">
+        <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 z-10 flex gap-2">
+           <Link href={`/product/${id}`} className="flex-1 py-2 sm:py-2.5 md:py-3 text-center rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 transition-all font-semibold text-xs sm:text-sm">
             Quick View
            </Link>
         </div>
-        
+
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
 
-      <div className="p-8 flex flex-col flex-1 justify-between gap-4">
+      <div className="p-4 sm:p-5 md:p-6 lg:p-8 flex flex-col flex-1 justify-between gap-3 md:gap-4">
         <div>
-          <p className="text-red-500/80 text-[11px] font-black uppercase tracking-[3px] mb-3">{category || 'Luxury Selection'}</p>
+          <p className="text-red-500/80 text-[9px] sm:text-[10px] md:text-[11px] font-black uppercase tracking-[2px] sm:tracking-[3px] mb-2 md:mb-3">{category || 'Luxury Selection'}</p>
           <Link href={`/product/${id}`}>
-            <h4 className="text-lg md:text-xl font-bold leading-snug break-words hover:text-red-500 transition-colors tracking-tight">{fullName}</h4>
+            <h4 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold leading-snug break-words hover:text-red-500 transition-colors tracking-tight">{fullName}</h4>
           </Link>
         </div>
-        
-        <div className="flex items-center justify-between mt-auto pt-4">
-          <span className={`text-2xl font-black ${isPremium ? 'text-yellow-400' : 'text-white'}`}>€{Number(price || 0).toFixed(2)}</span>
+
+        <div className="flex items-center justify-between mt-auto pt-3 md:pt-4">
+          <span className={`text-lg sm:text-xl md:text-2xl font-black ${isPremium ? 'text-yellow-400' : 'text-white'}`}>€{Number(price || 0).toFixed(2)}</span>
 
           <AddToCartButton
             variantId={variantId}

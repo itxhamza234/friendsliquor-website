@@ -47,8 +47,8 @@ ${formData.message}
   }
 
   return (
-    <div className="w-full pb-24">
-      <section className="relative h-[40vh] min-h-[400px] flex items-center justify-center px-6 border-b border-white/10">
+    <div className="w-full pb-16 sm:pb-20 md:pb-24">
+      <section className="relative h-[35vh] sm:h-[40vh] min-h-[300px] md:min-h-[400px] flex items-center justify-center px-4 sm:px-6 border-b border-white/10">
         <div
           className="absolute inset-0 opacity-20 bg-cover bg-center"
           style={{
@@ -59,30 +59,30 @@ ${formData.message}
 
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
 
-        <div className="relative z-10 text-center max-w-3xl mx-auto mt-10">
-          <h1 className="text-5xl md:text-7xl font-black mb-6">
+        <div className="relative z-10 text-center max-w-3xl mx-auto mt-8 sm:mt-10 px-4">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black mb-4 sm:mb-6">
             Contact <span className="text-red-500">Us</span>
           </h1>
 
-          <p className="text-xl text-white/70">
+          <p className="text-base sm:text-lg md:text-xl text-white/70">
             Get in touch instantly through WhatsApp.
           </p>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-6 py-20">
-        <div className="grid lg:grid-cols-2 gap-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20">
+        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16">
 
           {/* LEFT SIDE */}
-          <div className="flex flex-col justify-center">
-            <div className="bg-gradient-to-br from-[#111] to-[#1a1a1a] border border-white/10 rounded-[40px] p-10 relative overflow-hidden">
+          <div className="flex flex-col justify-center order-2 lg:order-1">
+            <div className="bg-gradient-to-br from-[#111] to-[#1a1a1a] border border-white/10 rounded-[20px] sm:rounded-[30px] md:rounded-[40px] p-6 sm:p-8 md:p-10 relative overflow-hidden">
 
-              <div className="absolute top-0 right-0 w-60 h-60 bg-green-500/10 blur-3xl rounded-full" />
+              <div className="absolute top-0 right-0 w-40 h-40 sm:w-50 sm:h-50 md:w-60 md:h-60 bg-green-500/10 blur-3xl rounded-full" />
 
               <div className="relative z-10">
-                <div className="w-20 h-20 rounded-3xl bg-[#25D366]/20 border border-[#25D366]/30 flex items-center justify-center mb-8">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-[#25D366]/20 border border-[#25D366]/30 flex items-center justify-center mb-6 sm:mb-8">
                   <svg
-                    className="w-10 h-10 text-[#25D366]"
+                    className="w-8 h-8 sm:w-10 sm:h-10 text-[#25D366]"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
@@ -90,29 +90,29 @@ ${formData.message}
                   </svg>
                 </div>
 
-                <h2 className="text-4xl font-black mb-6 leading-tight">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-black mb-4 sm:mb-6 leading-tight">
                   Chat Directly on{' '}
                   <span className="text-[#25D366]">WhatsApp</span>
                 </h2>
 
-                <p className="text-white/60 text-lg leading-relaxed mb-10">
+                <p className="text-white/60 text-sm sm:text-base md:text-lg leading-relaxed mb-6 sm:mb-8 md:mb-10">
                   Fill out the contact form and your message will instantly open
                   in WhatsApp. Fast replies, easy communication, and direct support.
                 </p>
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4 text-white/70">
-                    <div className="w-3 h-3 rounded-full bg-[#25D366]" />
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="flex items-center gap-3 sm:gap-4 text-white/70 text-sm sm:text-base">
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#25D366]" />
                     Instant response
                   </div>
 
-                  <div className="flex items-center gap-4 text-white/70">
-                    <div className="w-3 h-3 rounded-full bg-[#25D366]" />
+                  <div className="flex items-center gap-3 sm:gap-4 text-white/70 text-sm sm:text-base">
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#25D366]" />
                     Available 7 days a week
                   </div>
 
-                  <div className="flex items-center gap-4 text-white/70">
-                    <div className="w-3 h-3 rounded-full bg-[#25D366]" />
+                  <div className="flex items-center gap-3 sm:gap-4 text-white/70 text-sm sm:text-base">
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#25D366]" />
                     Direct customer support
                   </div>
                 </div>
@@ -121,16 +121,16 @@ ${formData.message}
           </div>
 
           {/* RIGHT SIDE FORM */}
-          <div className="bg-white/5 border border-white/10 p-10 rounded-[40px] backdrop-blur-xl">
-            <h2 className="text-3xl font-black mb-8">
+          <div className="bg-white/5 border border-white/10 p-6 sm:p-8 md:p-10 rounded-[20px] sm:rounded-[30px] md:rounded-[40px] backdrop-blur-xl order-1 lg:order-2">
+            <h2 className="text-2xl sm:text-3xl font-black mb-6 sm:mb-8">
               Send WhatsApp <span className="text-[#25D366]">Message</span>
             </h2>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-6">
 
-              <div className="grid sm:grid-cols-2 gap-6">
+              <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-bold text-white/70 uppercase tracking-wide">
+                  <label className="text-xs sm:text-sm font-bold text-white/70 uppercase tracking-wide">
                     First Name
                   </label>
 
@@ -144,13 +144,13 @@ ${formData.message}
                         firstName: e.target.value
                       })
                     }
-                    className="bg-black/50 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[#25D366] transition-colors"
-                    
+                    className="bg-black/50 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 outline-none focus:border-[#25D366] transition-colors text-sm sm:text-base"
+
                   />
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-bold text-white/70 uppercase tracking-wide">
+                  <label className="text-xs sm:text-sm font-bold text-white/70 uppercase tracking-wide">
                     Last Name
                   </label>
 
@@ -164,14 +164,14 @@ ${formData.message}
                         lastName: e.target.value
                       })
                     }
-                    className="bg-black/50 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[#25D366] transition-colors"
-                    
+                    className="bg-black/50 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 outline-none focus:border-[#25D366] transition-colors text-sm sm:text-base"
+
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-white/70 uppercase tracking-wide">
+                <label className="text-xs sm:text-sm font-bold text-white/70 uppercase tracking-wide">
                   Email
                 </label>
 
@@ -185,13 +185,13 @@ ${formData.message}
                       email: e.target.value
                     })
                   }
-                  className="bg-black/50 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[#25D366] transition-colors"
-                  
+                  className="bg-black/50 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 outline-none focus:border-[#25D366] transition-colors text-sm sm:text-base"
+
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-white/70 uppercase tracking-wide">
+                <label className="text-xs sm:text-sm font-bold text-white/70 uppercase tracking-wide">
                   Subject
                 </label>
 
@@ -203,7 +203,7 @@ ${formData.message}
                       subject: e.target.value
                     })
                   }
-                  className="bg-black/50 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[#25D366] transition-colors cursor-pointer text-white/70"
+                  className="bg-black/50 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 outline-none focus:border-[#25D366] transition-colors cursor-pointer text-white/70 text-sm sm:text-base"
                 >
                   <option>General Inquiry</option>
                   <option>Order Support</option>
@@ -213,7 +213,7 @@ ${formData.message}
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-white/70 uppercase tracking-wide">
+                <label className="text-xs sm:text-sm font-bold text-white/70 uppercase tracking-wide">
                   Message
                 </label>
 
@@ -227,7 +227,7 @@ ${formData.message}
                       message: e.target.value
                     })
                   }
-                  className="bg-black/50 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[#25D366] transition-colors resize-none"
+                  className="bg-black/50 border border-white/10 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 outline-none focus:border-[#25D366] transition-colors resize-none text-sm sm:text-base"
                   placeholder="How can we help you today?"
                 />
               </div>
@@ -235,10 +235,10 @@ ${formData.message}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-5 rounded-2xl bg-[#25D366] hover:bg-[#1ebe5d] disabled:opacity-60 transition-all font-black text-lg shadow-[0_0_40px_rgba(37,211,102,0.35)] flex items-center justify-center gap-3"
+                className="w-full py-4 sm:py-5 rounded-xl sm:rounded-2xl bg-[#25D366] hover:bg-[#1ebe5d] disabled:opacity-60 transition-all font-black text-base sm:text-lg shadow-[0_0_40px_rgba(37,211,102,0.35)] flex items-center justify-center gap-3"
               >
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5 sm:w-6 sm:h-6"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >

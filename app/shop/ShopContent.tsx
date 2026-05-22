@@ -108,20 +108,20 @@ export default function ShopPage() {
       </section>
 
       {/* Main Content */}
-      <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-8 md:py-12 flex flex-col lg:flex-row gap-8 lg:gap-12">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 py-6 md:py-8 lg:py-12 flex flex-col lg:flex-row gap-6 lg:gap-12">
 
         {/* Sidebar Categories */}
-        <aside className="w-full lg:w-72 flex-shrink-0">
-          <div className="sticky top-[80px] lg:top-[100px] space-y-8">
+        <aside className="w-full lg:w-72 flex-shrink-0 order-2 lg:order-1">
+          <div className="sticky top-[72px] lg:top-[100px] space-y-6 lg:space-y-8">
             {/* Categories */}
             <div>
-              <h4 className="font-bold text-base md:text-lg mb-4 uppercase tracking-wider">Categories</h4>
-              <div className="space-y-3">
+              <h4 className="font-bold text-sm md:text-base lg:text-lg mb-3 md:mb-4 uppercase tracking-wider">Categories</h4>
+              <div className="space-y-2 md:space-y-3">
                 <button
                   onClick={() => setSelectedCategory(null)}
-                  className={`flex items-center justify-between w-full transition group cursor-pointer ${!selectedCategory ? 'text-red-500' : 'text-white/60 hover:text-white'}`}
+                  className={`flex items-center justify-between w-full transition group cursor-pointer py-2 px-3 rounded-lg ${!selectedCategory ? 'text-red-500 bg-red-500/10' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
                 >
-                  <span>All Products</span>
+                  <span className="text-sm md:text-base">All Products</span>
                   <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${!selectedCategory ? 'bg-red-500/20 text-red-500' : 'bg-white/5 group-hover:bg-white/10'}`}>{products.length}</span>
                 </button>
                 {categories.map(cat => {
@@ -131,9 +131,9 @@ export default function ShopPage() {
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`flex items-center justify-between w-full transition group cursor-pointer ${selectedCategory === cat.id ? 'text-red-500' : 'text-white/60 hover:text-white'}`}
+                      className={`flex items-center justify-between w-full transition group cursor-pointer py-2 px-3 rounded-lg ${selectedCategory === cat.id ? 'text-red-500 bg-red-500/10' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
                     >
-                      <span>{cat.name}</span>
+                      <span className="text-sm md:text-base">{cat.name}</span>
                       <span className={`px-2 py-0.5 rounded-full text-xs ${selectedCategory === cat.id ? 'bg-red-500/20 text-red-500' : 'bg-white/5 group-hover:bg-white/10'}`}>{count}</span>
                     </button>
                   );
@@ -144,16 +144,16 @@ export default function ShopPage() {
         </aside>
 
         {/* Product Grid */}
-        <div className="flex-1">
+        <div className="flex-1 order-1 lg:order-2">
           {/* Top Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6 md:mb-8 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-md">
-            <p className="text-white/60 font-medium text-sm md:text-base">Showing {filteredProducts.length} of {products.length} products</p>
+          <div className="flex flex-wrap items-center justify-between gap-3 md:gap-4 mb-4 md:mb-6 lg:mb-8 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 backdrop-blur-md">
+            <p className="text-white/60 font-medium text-xs sm:text-sm md:text-base">Showing {filteredProducts.length} of {products.length} products</p>
           </div>
 
           {/* Grid */}
           {filteredProducts.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-white/60 text-lg">No products found in this category</p>
+              <p className="text-white/60 text-base md:text-lg">No products found in this category</p>
               <button
                 onClick={() => setSelectedCategory(null)}
                 className="mt-4 text-red-500 hover:underline"
@@ -162,7 +162,7 @@ export default function ShopPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4 lg:gap-6 xl:gap-8">
               {filteredProducts.map(product => (
                 <ProductCard key={product.product_id} product={product} />
               ))}

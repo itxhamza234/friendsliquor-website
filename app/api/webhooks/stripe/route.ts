@@ -16,7 +16,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 
 // Resend
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = new Resend(process.env.re_5QYodkJu_4mKAfw82xZQVV2j2JyoEGqgx)
 
 export async function POST(req: Request) {
   const body = await req.text()
@@ -75,6 +75,8 @@ export async function POST(req: Request) {
       // SEND EMAILS
       try {
         const customerEmail = session.customer_details?.email
+        console.log('RESEND KEY:', process.env.RESEND_API_KEY)
+        console.log('CUSTOMER EMAIL:', customerEmail)
 
         // CUSTOMER EMAIL
         await resend.emails.send({
@@ -92,9 +94,8 @@ export async function POST(req: Request) {
               </p>
 
               <p>
-                <strong>Amount:</strong> €${
-                  (session.amount_total || 0) / 100
-                }
+                <strong>Amount:</strong> €${(session.amount_total || 0) / 100
+            }
               </p>
 
               <p>
@@ -138,7 +139,7 @@ export async function POST(req: Request) {
 
         console.log('✅ Emails sent successfully')
       } catch (emailError) {
-        console.error('❌ Email sending failed:', emailError)
+        console.error('❌ Email sending failed:', JSON.stringify(emailError, null, 2))
       }
     }
   }
