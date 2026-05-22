@@ -1,0 +1,166 @@
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { Database } from '@/types/database.types'
+import { getUserOrders, completeOrderAfterStripe } from '@/lib/api/orders'
+
+type UserProfile = Database['public']['Tables']['users']['Row']
+
+export const revalidate = 0; // Don't cache profile data
+
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ order?: string; orderId?: string; session_id?: string }>
+}) {
+  const supabase = await createClient()
+  const params = await searchParams
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  if (params.order === 'success' && params.orderId) {
+    await completeOrderAfterStripe(
+      supabase,
+      user.id,
+      params.orderId,
+      params.session_id
+    )
+  }
+
+  const { data } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+    
+  const profile = data as UserProfile | null;
+  const orders = await getUserOrders(supabase, user.id)
+
+  return (
+    <div className="w-full pt-32 pb-24 px-6 min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-5xl font-black mb-12">My <span className="text-red-500">Account</span></h1>
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Sidebar */}
+          <div className="bg-white/5 border border-white/10 rounded-[30px] p-8 h-fit backdrop-blur-md">
+            <div className="w-24 h-24 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center mx-auto mb-6">
+              <span className="text-4xl font-bold text-white">
+                {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            
+            <h2 className="text-2xl font-bold text-center mb-2">{profile?.full_name || 'User'}</h2>
+            <p className="text-white/50 text-center mb-8">{user.email}</p>
+
+            <div className="flex flex-col gap-4">
+              <Link href="/profile" className="flex items-center gap-3 text-red-500 font-bold p-3 rounded-xl bg-white/5">
+                <span>👤</span> Profile Details
+              </Link>
+              <Link href="/cart" className="flex items-center gap-3 text-white/70 hover:text-white hover:bg-white/5 p-3 rounded-xl transition">
+                <span>🛍️</span> My Cart
+              </Link>
+              <form action="/auth/signout" method="post">
+                <button type="submit" className="flex items-center gap-3 text-white/70 hover:text-white hover:bg-white/5 p-3 rounded-xl transition w-full text-left">
+                  <span>🚪</span> Log out
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="md:col-span-2 space-y-8">
+            <div className="bg-white/5 border border-white/10 rounded-[30px] p-8 backdrop-blur-md">
+              <h3 className="text-2xl font-bold mb-6 border-b border-white/10 pb-4">Personal Information</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-white/50 mb-1">Full Name</label>
+                  <div className="text-lg font-medium">{profile?.full_name || 'Not provided'}</div>
+                </div>
+                <div>
+                  <label className="block text-sm text-white/50 mb-1">Email Address</label>
+                  <div className="text-lg font-medium">{user.email}</div>
+                </div>
+                <div>
+                  <label className="block text-sm text-white/50 mb-1">Joined</label>
+                  <div className="text-lg font-medium">
+                    {new Date(user.created_at).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-[30px] p-8 backdrop-blur-md">
+              <h3 className="text-2xl font-bold mb-6 border-b border-white/10 pb-4">Order History</h3>
+              {orders.length === 0 ? (
+                <div className="text-center py-12 text-white/50">
+                  <p>You have no recent orders.</p>
+                  <Link href="/shop" className="inline-block mt-4 px-6 py-2 rounded-full border border-white/20 hover:bg-white/10 transition-all text-white">
+                    Start Shopping
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {orders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="border border-white/10 rounded-2xl p-6 bg-black/20"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                        <div>
+                          <p className="text-white/50 text-sm">
+                            {new Date(order.created_at).toLocaleDateString('en-GB', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            })}
+                          </p>
+                          <p className="text-lg font-bold capitalize">
+                            {order.order_status}
+                          </p>
+                          <p className="text-sm text-white/50 capitalize mt-1">
+                            Payment: {order.payment_status}
+                          </p>
+                        </div>
+                        <p className="text-2xl font-black text-yellow-400">
+                          €{Number(order.total_price).toFixed(2)}
+                        </p>
+                      </div>
+                      {params.order === 'success' && params.orderId === order.id && (
+                        <p className="text-green-400 text-sm font-bold mb-3">
+                          ✓ Payment received — thank you for your order!
+                        </p>
+                      )}
+                      <ul className="space-y-2 text-white/70 text-sm">
+                        {order.items.map((item, idx) => (
+                          <li key={idx} className="flex justify-between gap-4">
+                            <span>
+                              {item.product_name}
+                              {item.size ? ` (${item.size})` : ''} × {item.quantity}
+                            </span>
+                            <span className="text-white font-medium">
+                              €{(item.price * item.quantity).toFixed(2)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
