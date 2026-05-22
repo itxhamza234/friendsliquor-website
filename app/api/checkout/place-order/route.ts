@@ -89,7 +89,8 @@ export async function POST(request: NextRequest) {
 
     // Stripe Checkout session
     const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') || 'http://localhost:3000'
+      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ||
+      'https://friendsliquorstore.nl'
 
     const lineItems = cartItems.map((item) => ({
       price_data: {
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
       payment_method_types: ['card', 'ideal'],
       line_items: lineItems,
       mode: 'payment',
+      customer_creation: 'always',
       customer_email: deliveryAddress.email || user.email || undefined,
       success_url: `${siteUrl}/profile?order=success&session_id={CHECKOUT_SESSION_ID}&orderId=${order.id}`,
       cancel_url: `${siteUrl}/checkout/payment`,

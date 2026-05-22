@@ -16,7 +16,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 
 // Resend
-const resend = new Resend(process.env.re_5QYodkJu_4mKAfw82xZQVV2j2JyoEGqgx)
+const resend = new Resend(process.env.RESEND_API_KEY || '')
 
 export async function POST(req: Request) {
   const body = await req.text()
