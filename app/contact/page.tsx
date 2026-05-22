@@ -27,7 +27,7 @@ export default function ContactPage() {
 ${formData.message}
     `
 
-    const phoneNumber = '31612345678'
+    const phoneNumber = '+31687630262'
 
     const whatsappURL = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
       whatsappMessage
