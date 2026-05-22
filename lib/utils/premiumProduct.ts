@@ -16,7 +16,7 @@ export async function filterOutPremiumProducts(
   const supabase = await createClient()
   const { data } = await supabase.from('products').select('id').eq('is_premium', true) as { data: { id: string }[] | null }
 
-  const premiumIds = new Set((data ?? []).map((row) => row.id))
+ const premiumIds = new Set((data ?? []).map((row) => (row as any).id))
 
   return products.filter(
     (p) => !premiumIds.has(p.product_id) && !isProductPremium(p)
