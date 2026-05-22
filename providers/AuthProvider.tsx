@@ -43,14 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle()
 
       const name =
-        profile?.full_name?.trim() ||
+        (profile as any)?.full_name?.trim() ||
         metaName?.trim() ||
         currentUser.email?.split('@')[0] ||
         'User'
 
       setDisplayName(name)
 
-      if (!profile?.full_name && metaName) {
+      if (!(profile as any)?.full_name && metaName) {
         await ensureUserProfile(supabase, currentUser, metaName)
       }
     },
