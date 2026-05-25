@@ -360,6 +360,10 @@ export async function getBrands(): Promise<string[]> {
   return brands
 }
 
+/* =========================
+   FIXED getProductsByBrand
+========================= */
+
 export async function getProductsByBrand(
   brand: string
 ): Promise<Product[]> {
@@ -394,4 +398,83 @@ export async function getProductsByBrand(
 
     return !isPremiumItem
   })
+}
+
+/* =========================
+   FIXED getProductBySlug
+========================= */
+
+export async function getProductBySlug(
+  slug: string
+): Promise<Product | null> {
+  const supabase = await createClient()
+
+  // Standard products
+  const { data: standardProduct, error: standardError } =
+    await supabase
+      .from('product_details_view')
+      .select('*')
+      .eq('product_slug', slug)
+      .single()
+
+  if (!standardError && standardProduct) {
+    const enriched = await enrichProductImages([
+      standardProduct as unknown as Product,
+    ])
+
+    const product = enriched[0]
+
+    return attachVariantsFromTable(product)
+  }
+
+  // Premium products
+  const { data: premiumProduct, error: premiumError } =
+    await (supabase
+      .from('premium_products') as any)
+      .select('*')
+      .eq('slug', slug)
+      .single()
+
+  if (premiumError || !premiumProduct) {
+    return null
+  }
+
+  const { data: variants } = await (supabase
+    .from('premium_product_variants') as any)
+    .select('*')
+    .eq('product_id', premiumProduct.id)
+
+  const premiumMapped = normalizeProductVariants({
+    product_id: premiumProduct.id,
+    product_name:
+      premiumProduct.product_name || premiumProduct.name,
+    product_slug: premiumProduct.slug,
+    brand: premiumProduct.brand,
+    description: premiumProduct.description,
+    category_id: premiumProduct.category_id,
+    image_url:
+      premiumProduct.image_url ||
+      premiumProduct.image ||
+      null,
+    image:
+      premiumProduct.image ||
+      premiumProduct.image_url ||
+      null,
+    is_premium: true,
+    is_active: premiumProduct.is_active,
+    is_featured: premiumProduct.is_featured,
+    flavor_profile: premiumProduct.flavor_profile,
+    abv: premiumProduct.abv,
+    variants: (variants || []).map((v: any) =>
+      normalizeVariantFromRow(
+        v as Record<string, unknown>
+      )
+    ),
+  } as unknown as Product)
+
+  const enrichedPremium = await enrichProductImages([
+    premiumMapped,
+  ])
+
+  return enrichedPremium[0]
 }
