@@ -36,7 +36,7 @@ export default function Navbar({ categories, premiumProducts }: NavbarProps) {
             Home
           </Link>
 
-          {/* Shop mega menu — categories + premium drinks only */}
+          {/* Shop mega menu */}
           <div className="group h-full flex items-center">
             <Link href="/shop" className="hover:text-red-500 transition py-4 text-sm">
               Shop
@@ -48,7 +48,7 @@ export default function Navbar({ categories, premiumProducts }: NavbarProps) {
                     Categories
                   </h4>
                   <div className="flex flex-col gap-3">
-                    {categories.map((cat) => (
+                    {categories.slice(0, 5).map((cat) => (
                       <Link
                         key={cat.slug}
                         href={`/shop?category=${cat.slug}`}
@@ -142,17 +142,11 @@ export default function Navbar({ categories, premiumProducts }: NavbarProps) {
 
           {!loading && user ? (
             <div className="hidden sm:flex items-center gap-3">
-              <Link
-                href="/profile"
-                className="text-white/80 text-sm hover:text-white"
-              >
+              <Link href="/profile" className="text-white/80 text-sm hover:text-white">
                 Hi, <span className="font-bold text-white">{firstName}</span>
               </Link>
               <form action="/auth/signout" method="post">
-                <button
-                  type="submit"
-                  className="text-white/60 hover:text-white transition text-sm"
-                >
+                <button type="submit" className="text-white/60 hover:text-white transition text-sm">
                   Log out
                 </button>
               </form>
@@ -193,7 +187,7 @@ export default function Navbar({ categories, premiumProducts }: NavbarProps) {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-black/95 backdrop-blur-xl border-b border-white/10">
+        <div className="lg:hidden bg-black/95 backdrop-blur-xl border-b border-white/10 max-h-[80vh] overflow-y-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col gap-4">
             <Link
               href="/"
@@ -209,6 +203,31 @@ export default function Navbar({ categories, premiumProducts }: NavbarProps) {
             >
               Shop
             </Link>
+
+            {/* Categories — sirf 5 + View All */}
+            <div className="border-t border-white/10 pt-4">
+              <p className="text-white/40 text-xs uppercase tracking-widest mb-3">Categories</p>
+              <div className="flex flex-col gap-2">
+                {categories.slice(0, 5).map((cat) => (
+                  <Link
+                    key={cat.slug}
+                    href={`/shop?category=${cat.slug}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-white/60 hover:text-red-500 transition py-1 text-base"
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+                <Link
+                  href="/shop"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-red-500 font-bold text-sm mt-1 hover:underline"
+                >
+                  View All Categories →
+                </Link>
+              </div>
+            </div>
+
             <Link
               href="/premium-drinks"
               onClick={() => setMobileMenuOpen(false)}
@@ -223,7 +242,7 @@ export default function Navbar({ categories, premiumProducts }: NavbarProps) {
             >
               Contact
             </Link>
-            
+
             <div className="border-t border-white/10 pt-4 mt-2">
               {!loading && user ? (
                 <div className="flex flex-col gap-3">

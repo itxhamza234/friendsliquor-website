@@ -1,13 +1,13 @@
 import Link from 'next/link';
-import { getPremiumProducts, getHomepageCategories } from '@/lib/api/products';
+import { getPremiumProducts, getShopCategories } from '@/lib/api/products';
 import ProductCard from '@/components/ProductCard';
 
 export const revalidate = 0;
 
-export default async function PremiumLiquorStore() {
+export default async function HomePage() {
   const [featuredProducts, homepageCategories] = await Promise.all([
     getPremiumProducts(),
-    getHomepageCategories(5),
+    getShopCategories(),
   ]);
 
   const premiumFour = featuredProducts.slice(0, 4);
@@ -48,7 +48,6 @@ export default async function PremiumLiquorStore() {
 
           <div className="relative flex justify-center">
             <div className="absolute w-96 h-96 bg-red-500/20 blur-[120px] rounded-full" />
-
             <img
               src="https://images.unsplash.com/photo-1569529465841-dfecdab7503b?q=80&w=1887&auto=format&fit=crop"
               alt="Bottle"
@@ -86,18 +85,18 @@ export default async function PremiumLiquorStore() {
         </div>
       </section>
 
-      {/* Our Collections — 5 categories only */}
+      {/* Our Collections */}
       <section className="py-24 px-6 bg-gradient-to-b from-black to-[#120707]">
         <div className="max-w-7xl mx-auto">
           <h3 className="text-5xl font-black mb-12 text-center md:text-left">
             OUR <span className="text-red-500">COLLECTIONS</span>
           </h3>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {homepageCategories.map((cat) => (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {homepageCategories.slice(0, 4).map((cat) => (
               <Link
                 key={cat.id}
-                href={`/${cat.slug}`}
+                href={`/shop?category=${cat.slug}`}
                 className="group relative rounded-3xl overflow-hidden bg-white/5 border border-white/10 aspect-square hover:bg-white/10 hover:border-red-500/50 transition-all duration-500 hover:-translate-y-2"
               >
                 {cat.image && (
@@ -157,5 +156,5 @@ export default async function PremiumLiquorStore() {
       </section>
 
     </div>
-  )
+  );
 }

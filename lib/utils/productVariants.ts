@@ -26,8 +26,8 @@ export function normalizeVariantFromRow(
     id: String(row.id ?? ''),
     variant_name: (row.variant_name as string | null) ?? size,
     size,
-    price_euro: Number(row.price_euro ?? row.price ?? 0),
-    stock: Number(row.stock_quantity ?? row.stock ?? 0),
+    price_euro: Number(row.price ?? row.price_euro ?? 0),
+    stock: Number(row.stock ?? row.stock_quantity ?? 0),
     sku: (row.sku as string | null) ?? null,
   }
 }

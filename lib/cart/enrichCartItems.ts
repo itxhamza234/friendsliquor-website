@@ -11,9 +11,9 @@ type VariantRow = {
   id: string
   product_id: string
   size: string | null
-  size_ml: number | null
+  size_ml?: number | null
   price: number | null
-  price_euro: number | null
+  price_euro?: number | null
 }
 
 type ProductRow = {
@@ -40,24 +40,74 @@ export async function enrichCartItems(
   if (cartRows.length === 0) return []
 
   const variantIds = cartRows.map((row) => row.product_variant_id)
-  const { data: variants, error: variantError } = await supabase
+
+  // Standard product_variants has: size, size_ml, price, price_euro
+  const { data: standardVariants } = await supabase
     .from('product_variants')
     .select('id, product_id, size, size_ml, price, price_euro')
     .in('id', variantIds)
 
-  if (variantError || !variants?.length) return []
+  // Premium product_variants has: size, price (no size_ml, no price_euro)
+  let premiumVariants = null
+  try {
+    const result = await supabase
+      .from('premium_product_variants')
+      .select('id, product_id, size, price')
+      .in('id', variantIds)
+    premiumVariants = result.data
+  } catch (e) {
+    console.error('Error fetching premium variants:', e)
+  }
 
-  const productIds = [...new Set(variants.map((v) => v.product_id))]
-  const { data: products, error: productError } = await supabase
+  const allVariants = [
+    ...(standardVariants || []).map((v) => ({ ...v, isPremium: false })),
+    ...(premiumVariants || []).map((v) => ({
+      ...v,
+      size_ml: null,
+      price_euro: null,
+      isPremium: true,
+    })),
+  ]
+
+  if (allVariants.length === 0) return []
+
+  const standardProductIds = [
+    ...new Set(
+      allVariants.filter((v) => !v.isPremium).map((v) => v.product_id)
+    ),
+  ]
+  const premiumProductIds = [
+    ...new Set(
+      allVariants.filter((v) => v.isPremium).map((v) => v.product_id)
+    ),
+  ]
+
+  const { data: standardProducts } = await supabase
     .from('products')
     .select('id, name, product_name, slug, brand, image_url, image, category_id')
-    .in('id', productIds)
+    .in('id', standardProductIds)
 
-  if (productError || !products?.length) return []
+  let premiumProducts = null
+  try {
+    const result = await supabase
+      .from('premium_products')
+      .select('id, name, product_name, slug, brand, image_url, image, category_id')
+      .in('id', premiumProductIds)
+    premiumProducts = result.data
+  } catch (e) {
+    console.error('Error fetching premium products:', e)
+  }
+
+  const allProducts = [
+    ...(standardProducts || []).map((p) => ({ ...p, isPremium: false })),
+    ...(premiumProducts || []).map((p) => ({ ...p, isPremium: true })),
+  ]
+
+  if (allProducts.length === 0) return []
 
   const categoryIds = [
     ...new Set(
-      (products as ProductRow[])
+      (allProducts as (ProductRow & { isPremium: boolean })[])
         .map((p) => p.category_id)
         .filter((id): id is string => Boolean(id))
     ),
@@ -75,8 +125,12 @@ export async function enrichCartItems(
     }
   }
 
-  const variantMap = new Map((variants as VariantRow[]).map((v) => [v.id, v]))
-  const productMap = new Map((products as ProductRow[]).map((p) => [p.id, p]))
+  const variantMap = new Map(
+    allVariants.map((v) => [v.id, v] as [string, VariantRow & { isPremium: boolean }])
+  )
+  const productMap = new Map(
+    allProducts.map((p) => [p.id, p] as [string, ProductRow & { isPremium: boolean }])
+  )
 
   return cartRows
     .map((row) => {
@@ -86,6 +140,7 @@ export async function enrichCartItems(
       const product = productMap.get(variant.product_id)
       if (!product) return null
 
+      // Use price_euro if available (standard variants), otherwise fallback to price
       const price = Number(variant.price_euro ?? variant.price ?? 0)
       const categoryName = product.category_id
         ? categoryMap.get(product.category_id) ?? null

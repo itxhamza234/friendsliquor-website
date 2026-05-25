@@ -10,6 +10,7 @@ export type CartLineItem = {
   image_url: string | null
   size: string
   price: number
-  name?: string;
+  name?: string
   lineTotal: number
+  isFreeItem?: boolean
 }

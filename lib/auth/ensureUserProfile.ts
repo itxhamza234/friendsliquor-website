@@ -18,17 +18,23 @@ export async function ensureUserProfile(
   const firstName = nameParts[0] || ''
   const lastName = nameParts.slice(1).join(' ') || ''
 
-  const { error } = await supabase.from('users').upsert(
-    {
-      id: user.id,
-      email: user.email,
-      full_name: name || user.email.split('@')[0],
-      first_name: firstName,
-      last_name: lastName,
-      role: 'customer' as const,
-    },
-    { onConflict: 'id' }
-  )
+  let error = null
+  try {
+    const result = await supabase.from('users').upsert(
+      {
+        id: user.id,
+        email: user.email,
+        full_name: name || user.email.split('@')[0],
+        role: 'customer' as const,
+      },
+      { onConflict: 'id' }
+    )
+    error = result.error
+  } catch (e) {
+    // Table might not exist yet or other error, log but don't crash
+    console.error('Error ensuring user profile:', e)
+    error = e as Error
+  }
 
   return { error }
 }

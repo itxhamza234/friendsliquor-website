@@ -7,6 +7,9 @@ export default async function PremiumDrinksPage() {
 
   const premiumProducts = await getPremiumProducts()
 
+  console.log('Premium products count:', premiumProducts.length)
+  console.log('First product:', JSON.stringify(premiumProducts[0], null, 2))
+
   return (
     <div className="w-full bg-black min-h-screen text-white pb-24">
 
@@ -35,6 +38,13 @@ export default async function PremiumDrinksPage() {
 
         </div>
       </section>
+
+      {/* Debug Info - baad mein remove kar dena */}
+      <div className="max-w-[1400px] mx-auto px-4 py-4">
+        <p className="text-yellow-400 text-sm">
+          Total products found: {premiumProducts.length}
+        </p>
+      </div>
 
       {/* Products */}
       <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-12">

@@ -13,6 +13,10 @@ import {
 } from '@/lib/cart/localStorageCart'
 import { CartLineItem } from '@/types/cart'
 
+const FREE_ITEM_THRESHOLD = 100
+const FREE_ITEM_VARIANT_ID = '2910d511-cb8a-436d-8028-8cc1b9ce89d2'
+const FREE_ITEM_QUANTITY = 2
+
 type CartRow = {
   id: string
   product_variant_id: string
@@ -29,6 +33,8 @@ type CartContextType = {
   clearCart: () => void
   cartTotal: number
   cartCount: number
+  hasFreeItem: boolean
+  amountUntilFreeItem: number
 }
 
 const CartContext = createContext<CartContextType>({
@@ -41,6 +47,8 @@ const CartContext = createContext<CartContextType>({
   clearCart: () => {},
   cartTotal: 0,
   cartCount: 0,
+  hasFreeItem: false,
+  amountUntilFreeItem: FREE_ITEM_THRESHOLD,
 })
 
 function storedToRows(items: StoredCartItem[]): CartRow[] {
@@ -70,7 +78,52 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       const rows = storedToRows(stored)
       const enriched = await enrichCartItems(supabase, rows)
-      setCartItems(enriched)
+
+      // Real total calculate karo (free item exclude)
+      const realTotal = enriched.reduce((sum, item) => sum + item.lineTotal, 0)
+
+      if (realTotal >= FREE_ITEM_THRESHOLD) {
+        // Check karo user ne khud Heineken 250ml add ki hai ya nahi
+        const userAddedHeineken = enriched.find(
+          (i) => i.product_variant_id === FREE_ITEM_VARIANT_ID
+        )
+
+        if (userAddedHeineken) {
+          // User ki apni Heineken hai — uske upar FREE_ITEM_QUANTITY aur add karo
+          const updatedItems = enriched.map((item) => {
+            if (item.product_variant_id === FREE_ITEM_VARIANT_ID) {
+              return {
+                ...item,
+                quantity: item.quantity + FREE_ITEM_QUANTITY,
+                // Extra free quantity track karo
+                freeQuantity: FREE_ITEM_QUANTITY,
+              }
+            }
+            return item
+          })
+          setCartItems(updatedItems)
+        } else {
+          // User ne khud nahi add ki — free item alag se dikhao
+          const freeItem: CartLineItem = {
+            id: 'free-heineken-250ml',
+            product_variant_id: FREE_ITEM_VARIANT_ID,
+            product_id: 'free-heineken-250ml',
+            product_name: 'Can/Bottle',
+            brand: 'Heineken',
+            category_name: 'Beer',
+            price: 0,
+            quantity: FREE_ITEM_QUANTITY,
+            lineTotal: 0,
+            size: '250ml',
+            image_url: null,
+            product_slug: 'heineken',
+            isFreeItem: true,
+          }
+          setCartItems([...enriched, freeItem])
+        }
+      } else {
+        setCartItems(enriched)
+      }
     },
     [supabase]
   )
@@ -97,15 +150,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [refreshCart])
 
-  /** Sync local cart to Supabase when logged in (best effort) */
   const syncToDatabase = useCallback(
     async (stored: StoredCartItem[]) => {
       if (!user) return
-
       await ensureUserProfile(supabase, user)
-
       for (const item of stored) {
-        await supabase.from('cart').upsert(
+        await (supabase.from('cart') as any).upsert(
           {
             user_id: user.id,
             product_variant_id: item.product_variant_id,
@@ -142,6 +192,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }
 
   const removeFromCart = async (variantId: string) => {
+    // Pure free item (jab user ne khud nahi add ki) remove nahi hogi
+    const item = cartItems.find((i) => i.product_variant_id === variantId)
+    if (item?.isFreeItem) return
+
     const updated = getStoredCart().filter(
       (i) => i.product_variant_id !== variantId
     )
@@ -158,6 +212,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }
 
   const updateQuantity = async (variantId: string, quantity: number) => {
+    // Pure free item ki quantity change nahi hogi
+    const item = cartItems.find((i) => i.product_variant_id === variantId)
+    if (item?.isFreeItem) return
+
     if (quantity <= 0) {
       await removeFromCart(variantId)
       return
@@ -170,8 +228,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     window.dispatchEvent(new Event('friends-cart-updated'))
 
     if (user) {
-      await supabase
-        .from('cart')
+      await (supabase.from('cart') as any)
         .update({ quantity })
         .eq('user_id', user.id)
         .eq('product_variant_id', variantId)
@@ -185,7 +242,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     window.dispatchEvent(new Event('friends-cart-updated'))
   }
 
-  const cartTotal = cartItems.reduce((sum, item) => sum + item.lineTotal, 0)
+  // Real total = free items exclude karke
+  const realCartItems = cartItems.filter((i) => !i.isFreeItem)
+  const cartTotal = realCartItems.reduce((sum, item) => sum + item.lineTotal, 0)
+  const hasFreeItem = cartTotal >= FREE_ITEM_THRESHOLD
+  const amountUntilFreeItem = Math.max(0, FREE_ITEM_THRESHOLD - cartTotal)
 
   return (
     <CartContext.Provider
@@ -199,6 +260,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         clearCart,
         cartTotal,
         cartCount,
+        hasFreeItem,
+        amountUntilFreeItem,
       }}
     >
       {children}

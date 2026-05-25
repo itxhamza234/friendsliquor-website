@@ -28,7 +28,7 @@ export default function Footer({
             {categories.slice(0, 8).map((cat) => (
               <Link
                 key={cat.slug}
-                href={`/${cat.slug}`}
+                href={`/shop?category=${cat.slug}`} 
                 className="hover:text-red-500 transition w-fit"
               >
                 {cat.name}

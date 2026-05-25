@@ -6,7 +6,6 @@ import {
   normalizeProductVariants,
   normalizeVariantFromRow,
 } from '@/lib/utils/productVariants'
-import { filterOutPremiumProducts } from '@/lib/utils/premiumProduct'
 
 type Category = Database['public']['Tables']['categories']['Row']
 
@@ -16,7 +15,7 @@ type ProductImageRow = {
   image: string | null
 }
 
-/** View reads variant images; admin saves on products — fill gaps from products table. */
+/** View reads variant images; admin saves on products — fill gaps from products or premium_products table. */
 async function enrichProductImages(products: Product[]): Promise<Product[]> {
   const needsLookup = products.filter((p) => !p.image_url && !p.image)
   if (needsLookup.length === 0) {
@@ -27,24 +26,39 @@ async function enrichProductImages(products: Product[]): Promise<Product[]> {
 
   const supabase = await createClient()
   const ids = needsLookup.map((p) => p.product_id)
-  const { data, error } = await supabase
+
+  const { data: standardData, error: standardError } = await supabase
     .from('products')
     .select('id, image_url, image')
     .in('id', ids)
 
-  if (error) {
-    console.error('Error fetching product images:', error.message)
+  const { data: premiumData, error: premiumError } = await (supabase
+    .from('premium_products') as any)
+    .select('id, image_url, image')
+    .in('id', ids)
+
+  const imageById = new Map()
+
+  if (!standardError && standardData) {
+    for (const row of standardData as ProductImageRow[]) {
+      imageById.set(row.id, row.image_url || row.image || null)
+    }
+  }
+
+  if (!premiumError && premiumData) {
+    for (const row of premiumData as ProductImageRow[]) {
+      if (!imageById.has(row.id)) {
+        imageById.set(row.id, row.image_url || row.image || null)
+      }
+    }
+  }
+
+  if (standardError && premiumError) {
+    console.error('Error fetching product images:', standardError.message, premiumError.message)
     return products.map((p) =>
       normalizeProductVariants(withResolvedProductImage(p))
     )
   }
-
-  const imageById = new Map(
-    ((data ?? []) as ProductImageRow[]).map((row) => [
-      row.id,
-      row.image_url || row.image || null,
-    ])
-  )
 
   return products.map((p) =>
     normalizeProductVariants(
@@ -69,11 +83,11 @@ async function attachVariantsFromTable(
   if (error || !data?.length) return product
 
   return normalizeProductVariants({
-  ...product,
-  variants: data.map((row) =>
-    normalizeVariantFromRow(row as Record<string, unknown>)
-  ),
-})
+    ...product,
+    variants: data.map((row) =>
+      normalizeVariantFromRow(row as Record<string, unknown>)
+    ),
+  })
 }
 
 export async function getCategories(): Promise<Category[]> {
@@ -113,8 +127,6 @@ export async function getShopCategories(): Promise<Category[]> {
   const categories = await getCategories()
 
   let visible = categories.filter((cat) => !isWineCategory(cat))
-
-  
 
   if (!visible.some(isWhiskyCategory)) {
     visible.push({
@@ -159,11 +171,11 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
 
 export async function getProducts(categoryId?: string): Promise<Product[]> {
   const supabase = await createClient()
-  
+
   let query = supabase
     .from('product_details_view')
     .select('*')
-    
+
   if (categoryId) {
     query = query.eq('category_id', categoryId)
   }
@@ -174,8 +186,19 @@ export async function getProducts(categoryId?: string): Promise<Product[]> {
     console.error('Error fetching products:', error.message, error.details, error.hint, error.code)
     return []
   }
+
   const enriched = await enrichProductImages(data as unknown as Product[])
-  return filterOutPremiumProducts(enriched)
+
+  return enriched.filter((product) => {
+    const raw = product as any
+    const isPremiumItem =
+      raw.premium === true ||
+      raw.premium === 'true' ||
+      raw.is_premium === true ||
+      raw.is_premium === 'true'
+
+    return !isPremiumItem
+  })
 }
 
 export async function getStandardProducts(categoryId?: string): Promise<Product[]> {
@@ -185,145 +208,64 @@ export async function getStandardProducts(categoryId?: string): Promise<Product[
 export async function getPremiumProducts(): Promise<Product[]> {
   const supabase = await createClient()
 
-  const { data: premiumIds } = await supabase
-    .from('products')
-    .select('id')
-    .eq('is_premium', true)
-
-  if (premiumIds && premiumIds.length > 0) {
-    const ids = premiumIds.map((p: { id: string }) => p.id)
-    const { data: fromView } = await supabase
-      .from('product_details_view')
-      .select('*')
-      .in('product_id', ids)
-
-    if (fromView && fromView.length > 0) {
-      return enrichProductImages(fromView as unknown as Product[])
-    }
-  }
-
-  let { data, error } = await supabase
-    .from('product_details_view')
+  const { data, error } = await (supabase
+    .from('premium_products') as any)
     .select('*')
-    .eq('premium', true)
+    .eq('is_active', true)
 
-  if (error || !data?.length) {
-    const fallback = await supabase
-      .from('product_details_view')
-      .select('*')
-      .eq('is_premium', true)
-    data = fallback.data
-    error = fallback.error
+  if (error) {
+    console.error('Error fetching premium products:', error.message)
+    return []
   }
 
-  if (error) return []
-  return enrichProductImages(data as unknown as Product[])
+  if (!data?.length) return []
+
+  const productIds = data.map((p: any) => p.id)
+
+  const { data: variants, error: variantError } = await (supabase
+    .from('premium_product_variants') as any)
+    .select('*')
+    .in('product_id', productIds)
+
+  if (variantError) {
+    console.error('Error fetching premium variants:', variantError.message)
+  }
+
+  const variantsByProduct = new Map<string, any[]>()
+  for (const variant of variants || []) {
+    if (!variantsByProduct.has(variant.product_id)) {
+      variantsByProduct.set(variant.product_id, [])
+    }
+    variantsByProduct.get(variant.product_id)!.push(variant)
+  }
+
+  const enriched = data.map((product: any) => {
+    const productVariants = variantsByProduct.get(product.id) || []
+
+    return normalizeProductVariants({
+      product_id: product.id,
+      product_name: product.product_name || product.name,
+      product_slug: product.slug,
+      brand: product.brand,
+      description: product.description,
+      category_id: product.category_id,
+      image_url: product.image_url || product.image || null,
+      image: product.image || product.image_url || null,
+      is_premium: true,
+      is_active: product.is_active,
+      is_featured: product.is_featured,
+      flavor_profile: product.flavor_profile,
+      abv: product.abv,
+      variants: productVariants.map((v: any) =>
+        normalizeVariantFromRow(v as Record<string, unknown>)
+      ),
+    } as unknown as Product)
+  })
+
+  return enrichProductImages(enriched)
 }
 
 export async function getTopPremiumProducts(limit = 5): Promise<Product[]> {
   const products = await getPremiumProducts()
   return products.slice(0, limit)
-}
-
-/** Homepage: first N shop categories (Whisky, Vodka, Rum, etc.) */
-export async function getHomepageCategories(limit = 5): Promise<Category[]> {
-  const categories = await getShopCategories()
-
-  // Add AI-style images for categories
-  const categoryImages: Record<string, string> = {
-    'whisky': 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?q=80&w=1000&auto=format&fit=crop',
-    'whiskey': 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?q=80&w=1000&auto=format&fit=crop',
-    'vodka': 'https://images.unsplash.com/photo-1607622750642-4d71d4e7e3e0?q=80&w=1000&auto=format&fit=crop',
-    'gin': 'https://images.unsplash.com/photo-1619371191026-646279316492?q=80&w=1000&auto=format&fit=crop', // Whiskey image as requested
-    'rum': 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?q=80&w=1000&auto=format&fit=crop',
-    'tequila': 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=1000&auto=format&fit=crop',
-    'beer': 'https://images.unsplash.com/photo-1608270586620-248524c67de9?q=80&w=1000&auto=format&fit=crop',
-    'beer-brands': 'https://images.unsplash.com/photo-1608270586620-248524c67de9?q=80&w=1000&auto=format&fit=crop',
-    'cans': 'https://images.unsplash.com/photo-1581006852262-e4307cf6283a?q=80&w=1200&auto=format&fit=crop', // Beer cans
-    'champagne': 'https://images.unsplash.com/photo-1594372365401-3b5ff14eaaed?q=80&w=1000&auto=format&fit=crop',
-    'champagne-sparkling': 'https://images.unsplash.com/photo-1594372365401-3b5ff14eaaed?q=80&w=1000&auto=format&fit=crop',
-    'dutch-gin-genever-cognac': 'https://images.unsplash.com/photo-1569529465841-dfecdab7503b?q=80&w=1000&auto=format&fit=crop', // Cognac/brandy image
-    'liqueurs-shots': 'https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?q=80&w=1000&auto=format&fit=crop',
-    'wines': 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=1000&auto=format&fit=crop',
-    'soft-drinks': 'https://images.unsplash.com/photo-1527960471264-932f39eb5846?q=80&w=1000&auto=format&fit=crop',
-    'seed-drinks-infused': 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=1000&auto=format&fit=crop',
-  }
-
-  return categories.slice(0, limit).map(cat => ({
-    ...cat,
-    image: cat.image || categoryImages[cat.slug?.toLowerCase() || ''] || categoryImages[cat.name?.toLowerCase() || ''] || null
-  }))
-}
-
-export async function getFeaturedProducts(): Promise<Product[]> {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('product_details_view')
-    .select('*')
-    .eq('featured', true)
-    .limit(3)
-
-  if (error) {
-    return []
-  }
-  return enrichProductImages(data as unknown as Product[])
-}
-
-export async function getProductBySlug(slug: string): Promise<Product | null> {
-  const supabase = await createClient()
-
-  const { data, error } = await supabase
-    .from('product_details_view')
-    .select('*')
-    .eq('product_slug', slug)
-    .single()
-
-  if (error) {
-    console.error('Error fetching product details:', {
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code,
-      slug: slug
-    })
-    return null
-  }
-  const [enriched] = await enrichProductImages([data as unknown as Product])
-  if (!enriched) return null
-  return attachVariantsFromTable(enriched)
-}
-
-export async function getBrands(): Promise<string[]> {
-  const supabase = await createClient()
-  const { data, error } = await supabase.from('products').select('brand')
-
-  if (error) return []
-
-  const uniqueBrands = Array.from(
-    new Set(
-      (data as { brand: string | null }[]).map((item) => item.brand).filter(Boolean)
-    )
-  ) as string[]
-
-  return uniqueBrands.sort((a, b) => a.localeCompare(b))
-}
-
-export async function getTopBrands(limit = 5): Promise<string[]> {
-  const brands = await getBrands()
-  return brands.slice(0, limit)
-}
-
-export async function getProductsByBrand(brand: string): Promise<Product[]> {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('product_details_view')
-    .select('*')
-    .ilike('brand', brand)
-
-  if (error) {
-    console.error('Error fetching products by brand:', error.message)
-    return []
-  }
-  const enriched = await enrichProductImages(data as unknown as Product[])
-  return filterOutPremiumProducts(enriched)
 }

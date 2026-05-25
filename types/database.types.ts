@@ -152,6 +152,88 @@ export interface Database {
           updated_at?: string
         }
       }
+      premium_products: {
+        Row: {
+          id: string
+          slug: string
+          product_name: string
+          category_id: string | null
+          brand: string | null
+          description: string | null
+          premium: boolean
+          featured: boolean
+          image_url: string | null
+          rating: number
+          stock: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          product_name: string
+          category_id?: string | null
+          brand?: string | null
+          description?: string | null
+          premium?: boolean
+          featured?: boolean
+          image_url?: string | null
+          rating?: number
+          stock?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          slug?: string
+          product_name?: string
+          category_id?: string | null
+          brand?: string | null
+          description?: string | null
+          premium?: boolean
+          featured?: boolean
+          image_url?: string | null
+          rating?: number
+          stock?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      premium_product_variants: {
+        Row: {
+          id: string
+          product_id: string
+          variant_name: string | null
+          size: string
+          price_euro: number
+          stock: number
+          sku: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          variant_name?: string | null
+          size: string
+          price_euro: number
+          stock?: number
+          sku?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          variant_name?: string | null
+          size?: string
+          price_euro?: number
+          stock?: number
+          sku?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       cart: {
         Row: {
           id: string

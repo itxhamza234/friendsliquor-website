@@ -19,13 +19,8 @@ export default async function CategoryPage({
     notFound();
   }
 
-  // Fetch all category products
-  const allProducts = await getProducts(categoryInfo.id);
-
-  // Remove premium drinks from normal categories
-  const categoryProducts = allProducts.filter(
-    (product) => product.is_premium === false
-  );
+  // Fetch all category products (premium filtering handled by getProducts)
+  const categoryProducts = await getProducts(categoryInfo.id);
 
   return (
     <div className="w-full pb-24">

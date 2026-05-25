@@ -43,6 +43,7 @@ export type DeliveryAddress = {
   address: string
   city: string
   postalCode: string
+  phone?: string
   email?: string
 }
 

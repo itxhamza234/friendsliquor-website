@@ -6,12 +6,12 @@ import { getUserOrders, completeOrderAfterStripe } from '@/lib/api/orders'
 
 type UserProfile = Database['public']['Tables']['users']['Row']
 
-export const revalidate = 0; // Don't cache profile data
+export const revalidate = 0;
 
 export default async function ProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ order?: string; orderId?: string; session_id?: string }>
+  searchParams: Promise<{ order?: string; orderId?: string; session_id?: string; wa?: string }>
 }) {
   const supabase = await createClient()
   const params = await searchParams
@@ -22,6 +22,7 @@ export default async function ProfilePage({
     redirect('/login')
   }
 
+  // Stripe success ke baad order complete karna
   if (params.order === 'success' && params.orderId) {
     await completeOrderAfterStripe(
       supabase,
@@ -36,27 +37,60 @@ export default async function ProfilePage({
     .select('*')
     .eq('id', user.id)
     .single()
-    
+
   const profile = data as UserProfile | null;
   const orders = await getUserOrders(supabase, user.id)
+
+  // WhatsApp URL ko safely decode karna
+  const whatsappUrl = params.wa ? decodeURIComponent(params.wa) : null
+  const isOrderSuccess = params.order === 'success' && params.orderId
 
   return (
     <div className="w-full pt-32 pb-24 px-6 min-h-screen">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-5xl font-black mb-12">My <span className="text-red-500">Account</span></h1>
 
+        {/* ── Order Success Banner + WhatsApp Button ── */}
+        {isOrderSuccess && (
+          <div className="mb-8 bg-green-500/10 border border-green-500/30 rounded-2xl p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-green-400 text-xl font-black mb-1">
+                  ✅ Payment Successful!
+                </p>
+                <p className="text-white/60 text-sm">
+                  Your order has been placed. Send your order details to admin via WhatsApp for fast processing.
+                </p>
+              </div>
+              
+              {/* Fix: href attribute added */}
+              {whatsappUrl && (
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 flex items-center gap-3 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold px-6 py-3 rounded-full transition-all shadow-[0_0_24px_rgba(37,211,102,0.4)] hover:shadow-[0_0_32px_rgba(37,211,102,0.6)]"
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                  </svg>
+                  Send Order to Admin
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Sidebar and Main Content */}
         <div className="grid md:grid-cols-3 gap-8">
-          {/* Sidebar */}
           <div className="bg-white/5 border border-white/10 rounded-[30px] p-8 h-fit backdrop-blur-md">
             <div className="w-24 h-24 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center mx-auto mb-6">
               <span className="text-4xl font-bold text-white">
                 {profile?.full_name ? profile.full_name.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase()}
               </span>
             </div>
-            
             <h2 className="text-2xl font-bold text-center mb-2">{profile?.full_name || 'User'}</h2>
             <p className="text-white/50 text-center mb-8">{user.email}</p>
-
             <div className="flex flex-col gap-4">
               <Link href="/profile" className="flex items-center gap-3 text-red-500 font-bold p-3 rounded-xl bg-white/5">
                 <span>👤</span> Profile Details
@@ -72,11 +106,9 @@ export default async function ProfilePage({
             </div>
           </div>
 
-          {/* Main Content */}
           <div className="md:col-span-2 space-y-8">
             <div className="bg-white/5 border border-white/10 rounded-[30px] p-8 backdrop-blur-md">
               <h3 className="text-2xl font-bold mb-6 border-b border-white/10 pb-4">Personal Information</h3>
-              
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm text-white/50 mb-1">Full Name</label>
@@ -86,16 +118,6 @@ export default async function ProfilePage({
                   <label className="block text-sm text-white/50 mb-1">Email Address</label>
                   <div className="text-lg font-medium">{user.email}</div>
                 </div>
-                <div>
-                  <label className="block text-sm text-white/50 mb-1">Joined</label>
-                  <div className="text-lg font-medium">
-                    {new Date(user.created_at).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -104,52 +126,23 @@ export default async function ProfilePage({
               {orders.length === 0 ? (
                 <div className="text-center py-12 text-white/50">
                   <p>You have no recent orders.</p>
-                  <Link href="/shop" className="inline-block mt-4 px-6 py-2 rounded-full border border-white/20 hover:bg-white/10 transition-all text-white">
-                    Start Shopping
-                  </Link>
                 </div>
               ) : (
                 <div className="space-y-6">
                   {orders.map((order) => (
-                    <div
-                      key={order.id}
-                      className="border border-white/10 rounded-2xl p-6 bg-black/20"
-                    >
+                    <div key={order.id} className="border border-white/10 rounded-2xl p-6 bg-black/20">
                       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                         <div>
-                          <p className="text-white/50 text-sm">
-                            {new Date(order.created_at).toLocaleDateString('en-GB', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                            })}
-                          </p>
-                          <p className="text-lg font-bold capitalize">
-                            {order.order_status}
-                          </p>
-                          <p className="text-sm text-white/50 capitalize mt-1">
-                            Payment: {order.payment_status}
-                          </p>
+                          <p className="text-lg font-bold capitalize">{order.order_status}</p>
+                          <p className="text-sm text-white/50">Payment: {order.payment_status}</p>
                         </div>
-                        <p className="text-2xl font-black text-yellow-400">
-                          €{Number(order.total_price).toFixed(2)}
-                        </p>
+                        <p className="text-2xl font-black text-yellow-400">€{Number(order.total_price).toFixed(2)}</p>
                       </div>
-                      {params.order === 'success' && params.orderId === order.id && (
-                        <p className="text-green-400 text-sm font-bold mb-3">
-                          ✓ Payment received — thank you for your order!
-                        </p>
-                      )}
                       <ul className="space-y-2 text-white/70 text-sm">
                         {order.items.map((item, idx) => (
                           <li key={idx} className="flex justify-between gap-4">
-                            <span>
-                              {item.product_name}
-                              {item.size ? ` (${item.size})` : ''} × {item.quantity}
-                            </span>
-                            <span className="text-white font-medium">
-                              €{(item.price * item.quantity).toFixed(2)}
-                            </span>
+                            <span>{item.product_name} × {item.quantity}</span>
+                            <span>€{(item.price * item.quantity).toFixed(2)}</span>
                           </li>
                         ))}
                       </ul>

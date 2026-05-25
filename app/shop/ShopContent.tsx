@@ -22,19 +22,30 @@ export default function ShopPage() {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const searchParams = useSearchParams()  // 👈 ADD
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient()
 
+      // 🔥 CACHE BUSTER QUERY: `.not` modifier query structure ko unique banata hai
+      // jis se Next.js aur browser ka local cache majbooran bypass ho jata hai aur direct fresh DB data aata hai.
       const { data: productsData } = await supabase
         .from('product_details_view')
         .select('*')
+        .not('product_id', 'is', null)
 
+      // 🔥 STRICT DATABASE FILTER: Filter out premium items (fallback since premium products are now in separate table)
       const nonPremiumProducts = (productsData || []).filter(
-        (p: Product & { is_premium?: boolean | string }) =>
-          String(p.is_premium) !== 'true'
+        (p: any) => {
+          const isPremiumFlag =
+            p.premium === true ||
+            String(p.premium).toLowerCase() === 'true' ||
+            p.is_premium === true ||
+            String(p.is_premium).toLowerCase() === 'true';
+
+          return !isPremiumFlag;
+        }
       )
 
       const { data: categoriesData } = await supabase
@@ -42,19 +53,12 @@ export default function ShopPage() {
         .select('*')
         .order('name')
 
-      const visibleCategories = ((categoriesData || []) as Category[]).filter(
-  (cat: Category) => {
-    const slug = (cat.slug || '').toLowerCase()
-    const name = (cat.name || '').toLowerCase()
-    return !slug.includes('wine') && !name.includes('wine')
-  }
-)
+      const visibleCategories = (categoriesData || []) as Category[]
 
       setProducts(nonPremiumProducts as Product[])
       setCategories(visibleCategories)
       setFilteredProducts(nonPremiumProducts as Product[])
 
-      // 👇 URL se category slug lo aur match karo
       const categorySlug = searchParams.get('category')
       if (categorySlug) {
         const matchedCat = visibleCategories.find(
@@ -68,16 +72,11 @@ export default function ShopPage() {
     fetchData()
   }, [searchParams])
 
-  // baaki sab same rehga...
-
   useEffect(() => {
     let filtered = [...products]
-
-    // Filter by category
     if (selectedCategory) {
       filtered = filtered.filter(p => p.category_id === selectedCategory)
     }
-
     setFilteredProducts(filtered)
   }, [products, selectedCategory])
 
@@ -98,9 +97,10 @@ export default function ShopPage() {
           style={{ backgroundImage: "url('https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=1974&auto=format&fit=crop')" }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
-
         <div className="relative z-10 text-center max-w-3xl mx-auto mt-10 px-4">
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black mb-6">Our <span className="text-red-500">Collection</span></h1>
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black mb-6">
+            Our <span className="text-red-500">Collection</span>
+          </h1>
           <p className="text-lg md:text-xl text-white/70">
             Explore the finest selection of premium liquors in Amsterdam.
           </p>
@@ -111,32 +111,80 @@ export default function ShopPage() {
       <div className="max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 py-6 md:py-8 lg:py-12 flex flex-col lg:flex-row gap-6 lg:gap-12">
 
         {/* Sidebar Categories */}
-        <aside className="w-full lg:w-72 flex-shrink-0 order-2 lg:order-1">
+        <aside className="w-full lg:w-72 flex-shrink-0 order-1">
           <div className="sticky top-[72px] lg:top-[100px] space-y-6 lg:space-y-8">
-            {/* Categories */}
             <div>
-              <h4 className="font-bold text-sm md:text-base lg:text-lg mb-3 md:mb-4 uppercase tracking-wider">Categories</h4>
-              <div className="space-y-2 md:space-y-3">
+              <h4 className="font-bold text-sm md:text-base lg:text-lg mb-3 md:mb-4 uppercase tracking-wider">
+                Categories
+              </h4>
+
+              {/* Mobile: Horizontal Scroll Pills */}
+              <div className="flex lg:hidden gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 <button
                   onClick={() => setSelectedCategory(null)}
-                  className={`flex items-center justify-between w-full transition group cursor-pointer py-2 px-3 rounded-lg ${!selectedCategory ? 'text-red-500 bg-red-500/10' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition ${
+                    !selectedCategory ? 'bg-red-500 text-white' : 'bg-white/10 text-white/60'
+                  }`}
                 >
-                  <span className="text-sm md:text-base">All Products</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${!selectedCategory ? 'bg-red-500/20 text-red-500' : 'bg-white/5 group-hover:bg-white/10'}`}>{products.length}</span>
+                  All ({products.length})
                 </button>
                 {categories.map(cat => {
                   const count = products.filter(p => p.category_id === cat.id).length
-
                   return (
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`flex items-center justify-between w-full transition group cursor-pointer py-2 px-3 rounded-lg ${selectedCategory === cat.id ? 'text-red-500 bg-red-500/10' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition ${
+                        selectedCategory === cat.id
+                          ? 'bg-red-500 text-white'
+                          : 'bg-white/10 text-white/60'
+                      }`}
+                    >
+                      {cat.name} ({count})
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Desktop: Vertical List */}
+              <div className="hidden lg:block space-y-2 md:space-y-3 max-h-[calc(100vh-220px)] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className={`flex items-center justify-between w-full transition group cursor-pointer py-2 px-3 rounded-lg ${
+                    !selectedCategory
+                      ? 'text-red-500 bg-red-500/10'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <span className="text-sm md:text-base">All Products</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                    !selectedCategory ? 'bg-red-500/20 text-red-500' : 'bg-white/5 group-hover:bg-white/10'
+                  }`}>
+                    {products.length}
+                  </span>
+                </button>
+                {categories.map(cat => {
+                  const count = products.filter(p => p.category_id === cat.id).length
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`flex items-center justify-between w-full transition group cursor-pointer py-2 px-3 rounded-lg ${
+                        selectedCategory === cat.id
+                          ? 'text-red-500 bg-red-500/10'
+                          : 'text-white/60 hover:text-white hover:bg-white/5'
+                      }`}
                     >
                       <span className="text-sm md:text-base">{cat.name}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${selectedCategory === cat.id ? 'bg-red-500/20 text-red-500' : 'bg-white/5 group-hover:bg-white/10'}`}>{count}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${
+                        selectedCategory === cat.id
+                          ? 'bg-red-500/20 text-red-500'
+                          : 'bg-white/5 group-hover:bg-white/10'
+                      }`}>
+                        {count}
+                      </span>
                     </button>
-                  );
+                  )
                 })}
               </div>
             </div>
@@ -144,10 +192,12 @@ export default function ShopPage() {
         </aside>
 
         {/* Product Grid */}
-        <div className="flex-1 order-1 lg:order-2">
+        <div className="flex-1 order-2">
           {/* Top Toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-3 md:gap-4 mb-4 md:mb-6 lg:mb-8 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 backdrop-blur-md">
-            <p className="text-white/60 font-medium text-xs sm:text-sm md:text-base">Showing {filteredProducts.length} of {products.length} products</p>
+            <p className="text-white/60 font-medium text-xs sm:text-sm md:text-base">
+              Showing {filteredProducts.length} of {products.length} products
+            </p>
           </div>
 
           {/* Grid */}
