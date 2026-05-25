@@ -14,7 +14,7 @@ export default function TopInfoBar() {
         <span className="font-medium">Order above</span>
         <span className="bg-black text-yellow-400 px-2 py-0.5 rounded-full font-black">€100</span>
         <span className="font-medium">and get</span>
-        <span className="font-black">2× Heineken Beer 250ml Can FREE!</span>
+        <span className="font-black">2× Heineken Beer 330ml Can FREE!</span>
         <span>🍺</span>
       </div>
 
