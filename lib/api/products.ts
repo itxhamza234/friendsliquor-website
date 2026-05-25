@@ -18,6 +18,7 @@ type ProductImageRow = {
 /** View reads variant images; admin saves on products — fill gaps from products or premium_products table. */
 async function enrichProductImages(products: Product[]): Promise<Product[]> {
   const needsLookup = products.filter((p) => !p.image_url && !p.image)
+
   if (needsLookup.length === 0) {
     return products.map((p) =>
       normalizeProductVariants(withResolvedProductImage(p))
@@ -54,7 +55,12 @@ async function enrichProductImages(products: Product[]): Promise<Product[]> {
   }
 
   if (standardError && premiumError) {
-    console.error('Error fetching product images:', standardError.message, premiumError.message)
+    console.error(
+      'Error fetching product images:',
+      standardError.message,
+      premiumError.message
+    )
+
     return products.map((p) =>
       normalizeProductVariants(withResolvedProductImage(p))
     )
@@ -75,6 +81,7 @@ async function attachVariantsFromTable(
   }
 
   const supabase = await createClient()
+
   const { data, error } = await supabase
     .from('product_variants')
     .select('*')
@@ -92,33 +99,55 @@ async function attachVariantsFromTable(
 
 export async function getCategories(): Promise<Category[]> {
   const supabase = await createClient()
+
   const { data, error } = await supabase
     .from('categories')
     .select('*')
     .order('name')
 
   if (error) {
-    console.error('Error fetching categories:', error.message, error.details, error.hint, error.code)
+    console.error(
+      'Error fetching categories:',
+      error.message,
+      error.details,
+      error.hint,
+      error.code
+    )
+
     return []
   }
+
   return data as Category[]
 }
 
 function isWineCategory(cat: Category): boolean {
   const slug = (cat.slug || '').toLowerCase()
   const name = (cat.name || '').toLowerCase()
-  return slug === 'wines' || slug === 'wine' || name === 'wines' || name === 'wine'
+
+  return (
+    slug === 'wines' ||
+    slug === 'wine' ||
+    name === 'wines' ||
+    name === 'wine'
+  )
 }
 
 function isWhiskyCategory(cat: Category): boolean {
   const slug = (cat.slug || '').toLowerCase()
   const name = (cat.name || '').toLowerCase()
-  return slug === 'whisky' || slug === 'whiskey' || name === 'whisky' || name === 'whiskey'
+
+  return (
+    slug === 'whisky' ||
+    slug === 'whiskey' ||
+    name === 'whisky' ||
+    name === 'whiskey'
+  )
 }
 
 function isVodkaCategory(cat: Category): boolean {
   const slug = (cat.slug || '').toLowerCase()
   const name = (cat.name || '').toLowerCase()
+
   return slug === 'vodka' || name === 'vodka'
 }
 
@@ -155,8 +184,11 @@ export async function getShopCategories(): Promise<Category[]> {
   return visible.sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export async function getCategoryBySlug(slug: string): Promise<Category | null> {
+export async function getCategoryBySlug(
+  slug: string
+): Promise<Category | null> {
   const supabase = await createClient()
+
   const { data, error } = await supabase
     .from('categories')
     .select('*')
@@ -166,10 +198,13 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
   if (error) {
     return null
   }
+
   return data as Category
 }
 
-export async function getProducts(categoryId?: string): Promise<Product[]> {
+export async function getProducts(
+  categoryId?: string
+): Promise<Product[]> {
   const supabase = await createClient()
 
   let query = supabase
@@ -183,14 +218,24 @@ export async function getProducts(categoryId?: string): Promise<Product[]> {
   const { data, error } = await query
 
   if (error) {
-    console.error('Error fetching products:', error.message, error.details, error.hint, error.code)
+    console.error(
+      'Error fetching products:',
+      error.message,
+      error.details,
+      error.hint,
+      error.code
+    )
+
     return []
   }
 
-  const enriched = await enrichProductImages(data as unknown as Product[])
+  const enriched = await enrichProductImages(
+    data as unknown as Product[]
+  )
 
   return enriched.filter((product) => {
     const raw = product as any
+
     const isPremiumItem =
       raw.premium === true ||
       raw.premium === 'true' ||
@@ -201,7 +246,9 @@ export async function getProducts(categoryId?: string): Promise<Product[]> {
   })
 }
 
-export async function getStandardProducts(categoryId?: string): Promise<Product[]> {
+export async function getStandardProducts(
+  categoryId?: string
+): Promise<Product[]> {
   return getProducts(categoryId)
 }
 
@@ -214,7 +261,11 @@ export async function getPremiumProducts(): Promise<Product[]> {
     .eq('is_active', true)
 
   if (error) {
-    console.error('Error fetching premium products:', error.message)
+    console.error(
+      'Error fetching premium products:',
+      error.message
+    )
+
     return []
   }
 
@@ -228,19 +279,25 @@ export async function getPremiumProducts(): Promise<Product[]> {
     .in('product_id', productIds)
 
   if (variantError) {
-    console.error('Error fetching premium variants:', variantError.message)
+    console.error(
+      'Error fetching premium variants:',
+      variantError.message
+    )
   }
 
   const variantsByProduct = new Map<string, any[]>()
+
   for (const variant of variants || []) {
     if (!variantsByProduct.has(variant.product_id)) {
       variantsByProduct.set(variant.product_id, [])
     }
+
     variantsByProduct.get(variant.product_id)!.push(variant)
   }
 
   const enriched = data.map((product: any) => {
-    const productVariants = variantsByProduct.get(product.id) || []
+    const productVariants =
+      variantsByProduct.get(product.id) || []
 
     return normalizeProductVariants({
       product_id: product.id,
@@ -265,7 +322,76 @@ export async function getPremiumProducts(): Promise<Product[]> {
   return enrichProductImages(enriched)
 }
 
-export async function getTopPremiumProducts(limit = 5): Promise<Product[]> {
+export async function getTopPremiumProducts(
+  limit = 5
+): Promise<Product[]> {
   const products = await getPremiumProducts()
   return products.slice(0, limit)
+}
+
+/* =========================
+   UPDATED getBrands FUNCTION
+========================= */
+
+export async function getBrands(): Promise<string[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('products')
+    .select('brand')
+    .not('brand', 'is', null)
+    .order('brand')
+
+  if (error) {
+    console.error('Error fetching brands:', error.message)
+    return []
+  }
+
+  const rows = data as { brand: string }[]
+
+  const brands = [
+    ...new Set(
+      rows
+        .map((p) => p.brand)
+        .filter(Boolean)
+    ),
+  ]
+
+  return brands
+}
+
+export async function getProductsByBrand(
+  brand: string
+): Promise<Product[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('product_details_view')
+    .select('*')
+    .eq('brand', brand)
+
+  if (error) {
+    console.error(
+      'Error fetching products by brand:',
+      error.message
+    )
+
+    return []
+  }
+
+  const enriched = await enrichProductImages(
+    data as unknown as Product[]
+  )
+
+  return enriched.filter((product) => {
+    const raw = product as any
+
+    const isPremiumItem =
+      raw.premium === true ||
+      raw.premium === 'true' ||
+      raw.is_premium === true ||
+      raw.is_premium === 'true'
+
+    return !isPremiumItem
+  })
 }
